@@ -1,7 +1,4 @@
-export ARCH=arm
-export CROSS_COMPILE=arm-linux-gnueabihf-
-
-KDIR := ../bb-kernel/KERNEL
+KDIR=/lib/modules/$(shell uname -r)/build
 
 obj-m+=pfi.o
  
