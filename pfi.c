@@ -32,16 +32,42 @@ static irq_handler_t pfi_irq_handler(unsigned int irq, void *dev_id, struct pt_r
     device = dev_get_by_name(&init_net, "eth0");
     device->phydev->drv->suspend(device->phydev);
 
-    gpio_set_value(gpio_pin, 1);
+    gpio_set_value(gpio_pin, 0);
+
 
     return (irq_handler_t) IRQ_HANDLED;
 }
 
+#define AM33XX_CONTROL_BASE		0x44e10000
+
+static int
+setup_pinmux(void)
+{
+   int i;
+   static u32 pins[] = {
+      AM33XX_CONTROL_BASE + 0x838,   // test pin (60): gpio1_28 (beaglebone p9/12)
+      0x7 | (2 << 3)                //       mode 7 (gpio), PULLUP, OUTPUT
+   };
+
+   for (i=0; i<2; i+=2) {
+      void* addr = ioremap(pins[i], 4);
+
+      if (NULL == addr)
+         return -EBUSY;
+
+      iowrite32(pins[i+1], addr);
+      iounmap(addr);
+   }
+
+   return 0;
+}
  
 /** @brief The LKM initialization function
  *  @return returns 0 if successful
  */
 static int __init pfi_init(void){
+
+    setup_pinmux();
 
     int result = gpio_request_one(irq_pin, GPIOF_IN, DRV_NAME " irq");
 
