@@ -33,6 +33,8 @@ MODULE_PARM_DESC(interface, "Interface to disable when interrupt was received.")
 static struct class *pfi_class = NULL;
 static struct device *pfi_device = NULL;
 
+struct kernfs_node *value_sd;
+
 /**
  * PFI handler
  * @param  irq    Interrupt number
@@ -42,7 +44,6 @@ static struct device *pfi_device = NULL;
 static irq_handler_t pfi_irq_handler(unsigned int irq, void *arg, struct pt_regs *regs)
 {
     struct net_device* device;
-    struct kernfs_node *value_sd = arg;
 
     printk(KERN_INFO DRV_NAME ": interrupt received\n");
     device = dev_get_by_name(&init_net, iface);
@@ -80,7 +81,6 @@ static void cleanup_sysfs(void)
 static int __init pfi_init(void)
 {
     int result;
-    struct kernfs_node *value_sd = NULL;
 
     printk(KERN_INFO DRV_NAME ": interface=%s, pin=%d\n", iface, pin);
 
@@ -122,6 +122,7 @@ static int __init pfi_init(void)
     if (result >= 0)
     {
         irq_number = gpio_to_irq(pin);
+
         if (irq_number >= 0)
         {
             result = request_threaded_irq(irq_number, NULL, (irq_handler_t) pfi_irq_handler,
@@ -149,12 +150,12 @@ static int __init pfi_init(void)
  */
 static void __exit pfi_exit(void)
 {
-    cleanup_sysfs();
-
-    free_irq(irq_number, NULL);
+    free_irq(irq_number, value_sd);
     
     gpio_free(pin);
     
+    cleanup_sysfs();
+
     printk(KERN_INFO DRV_NAME ": unloaded\n");
 }
  
