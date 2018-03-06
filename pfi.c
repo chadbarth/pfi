@@ -5,17 +5,17 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/irq.h>
-#include <linux/interrupt.h> 
+#include <linux/interrupt.h>
 #include <linux/phy.h>
 #include <linux/netdevice.h>
 #include <linux/kobject.h>
 
 #define DRV_NAME "pfi"
- 
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vorne Industries");
 MODULE_DESCRIPTION("Take emergency actions on power fail interrupt");
-MODULE_VERSION("0.1");
+MODULE_VERSION("0.2");
 
 /* A mutex will ensure that only one process accesses our device */
 static DEFINE_MUTEX(pfi_mutex);
@@ -74,7 +74,7 @@ static void cleanup_sysfs(void)
     device_destroy(pfi_class, MKDEV(0, 0));
     class_destroy(pfi_class);
 }
- 
+
 /** @brief The LKM initialization function
  *  @return returns 0 if successful
  */
@@ -116,11 +116,19 @@ static int __init pfi_init(void)
         printk(KERN_ALERT DRV_NAME ": failed to get file descriptor\n");
         cleanup_sysfs();
         return -1;
-    } 
+    }
 
     result = gpio_request_one(pin, GPIOF_IN, DRV_NAME " irq");
     if (result >= 0)
     {
+        // Set debounce to 500 microseconds. This actually sets it for the entire
+        // gpio bank, not just the specific pin.
+        result = gpio_set_debounce(pin, 500);
+        if(result != 0)
+        {
+            printk(KERN_ALERT DRV_NAME ": gpio_set_debounce returned %d.\n", result);
+        }
+
         irq_number = gpio_to_irq(pin);
 
         if (irq_number >= 0)
@@ -151,13 +159,13 @@ static int __init pfi_init(void)
 static void __exit pfi_exit(void)
 {
     free_irq(irq_number, value_sd);
-    
+
     gpio_free(pin);
-    
+
     cleanup_sysfs();
 
     printk(KERN_INFO DRV_NAME ": unloaded\n");
 }
- 
+
 module_init(pfi_init);
 module_exit(pfi_exit);
