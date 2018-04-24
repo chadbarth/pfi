@@ -1,9 +1,8 @@
-KDIR=/lib/modules/$(shell uname -r)/build
+obj-m := pfi.o
 
-obj-m+=pfi.o
- 
+SRC := $(shell pwd)
+
 all:
-	make -C $(KDIR) M=$(PWD) modules
+	make -C $(KERNEL_SRC) M=$(SRC) modules
 clean:
-	make -C $(KDIR) M=$(PWD) clean
-
+	make -C $(KERNEL_SRC) M=$(SRC) clean
