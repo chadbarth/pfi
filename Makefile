@@ -3,6 +3,10 @@ obj-m := pfi.o
 SRC := $(shell pwd)
 
 all:
-	make -C $(KERNEL_SRC) M=$(SRC) modules
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+
 clean:
-	make -C $(KERNEL_SRC) M=$(SRC) clean
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) clean
